@@ -35,7 +35,8 @@ function startPoll() {
 };
 
 function sendAnswer () {
-    let playerResponse = document.getElementById("dataField").textContent;
+    let playerResponse = document.getElementById("dataField").value;
+    console.log("Sending answer " + playerResponse);
     pollServer("Answer",playerResponse);
 }
 

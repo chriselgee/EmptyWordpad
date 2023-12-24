@@ -9,10 +9,20 @@
 </head>
 <body>
 
-    <h1>Game Status</h1>
+    <h1>{{ name }}</h1>
     <textarea id="prompt" rows="1" cols="50">Prompt appears here</textarea>
+    <textarea id="gameId" style="display: none;" value="{{ gameId }}"></textarea>
     <textarea id="dataField" rows="10" cols="50"></textarea>
     <button onclick="sendAnswer()">Get Data</button>
+
+    <table id="scoreTable">
+        <tr><td id="name1">Pending</td><td id="answered1">...</td><td id="score1">0</td></tr>
+        <tr><td id="name2">Pending</td><td id="answered2">...</td><td id="score2">0</td></tr>
+        <tr><td id="name3">Pending</td><td id="answered3">...</td><td id="score3">0</td></tr>
+        <tr><td id="name4">Pending</td><td id="answered4">...</td><td id="score4">0</td></tr>
+        <tr><td id="name5">Pending</td><td id="answered5">...</td><td id="score5">0</td></tr>
+        <tr><td id="name6">Pending</td><td id="answered6">...</td><td id="score6">0</td></tr>
+    </table>
 
 </body>
 </html>
