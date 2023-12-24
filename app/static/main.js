@@ -1,29 +1,42 @@
-function pollServer() {
+function pollServer(type, message) {
+    const payload = {
+        Type: type,
+        Message: message
+    };
     fetch('poll', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            document.getElementById("dataField").textContent;
+            payload
         }),
     })
     .then(response => response.json())
     .then(data => {
         console.log('Received data:', data);
         // Process the data here
-        if (data.Type == "prompt") {
+        if (data.Type == "Prompt") {
             console.log("Prompt!");
             document.getElementById("prompt").textContent = data.Prompt;
         }
         // Schedule the next poll
-        setTimeout(pollServer, 5000); // Poll every 5 seconds
+        // setTimeout(pollServer, 5000); // Poll every 5 seconds
     })
     .catch(error => {
         console.error('Error during polling:', error);
-
-        // Optionally, schedule a retry here
-        setTimeout(pollServer, 1000);
     });
 }
 
+function startPoll() {
+    pollServer("Start","Start");
+    // Optionally, schedule a retry here
+    // setTimeout(pollServer, 1000);
+};
+
+function sendAnswer () {
+    let playerResponse = document.getElementById("dataField").textContent;
+    pollServer("Answer",playerResponse);
+}
+
+window.onload = startPoll();

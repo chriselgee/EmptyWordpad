@@ -19,7 +19,11 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET','POST'])
 def index():
-    return redirect('game', code=302)
+    return redirect('setup', code=302)
+
+@app.route('/setup', methods=['GET','POST'])
+def setup():
+    return render_template('setup.html')
 
 @app.route('/game', methods=['GET','POST'])
 def game():
@@ -28,19 +32,20 @@ def game():
 @app.route('/poll', methods=['POST'])
 def handle_request():
     # Extract data sent by client
-    data = request.json
+    data = request.json["payload"]
+    if request.method == "POST":
+        if "name" in request.form:
+            name = request.form['name']
     ic('Received data from client:', data)
 
-    # Process the data (your game logic here)
-
-    # Prepare your response data
-    response_data = {
-        'status': 'success',
-        'message': 'Data processed',
-        # Add other data you want to send back
-    }
-
-    return jsonify(response_data)
+    if data["Type"] == "Start":
+        prompt = pickPrompt()
+        ic(f"Sending prompt {prompt}")
+        return jsonify({"Type":"Prompt", "Prompt":prompt})
+    elif data["Type"] == "Answer":
+        return jsonify("Answer")
+    else:
+        return jsonify("Answer")
 
 if __name__ == '__main__':
     app.run(debug=True)
