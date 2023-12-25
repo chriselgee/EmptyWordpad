@@ -13,7 +13,9 @@ if getenv("DEBUG") is not None:
     verbose = True
 else: debug = False
 
-# Open the file and read each line
+games = {}
+
+# Open the file and read each line into prompts
 file_path = 'data/prompts.txt'
 prompts = []
 with open(file_path, 'r') as file:
@@ -24,7 +26,16 @@ def pickPrompt():
     # give prompt for players
     return choice(prompts)
 
-games = {}
+def genUpdate(gameId, sanitized=True):
+    # generate an update to push to players, w/o others' prompts if the round isn't over
+    global games
+    update = []
+    for player in gameas[gameId]:
+        update.append(player)
+        if sanitized:
+            update[player]["Prompt"] = "Entered"
+    return update
+
 # Each game is a dict entry like:
 # {"Game12":{"Players":[], "Prompt":"Fire ____"}}
 
@@ -44,6 +55,7 @@ def setup():
 
 @app.route('/game', methods=['GET','POST'])
 def game():
+    # set up a game
     if request.method == "GET": # really ought to get here by POST
         return redirect("setup", code=302)
     # set up the player/game
@@ -68,13 +80,14 @@ def game():
 
 @app.route('/poll', methods=['POST'])
 def handle_request():
+    # respond to regular poll requests from clients
     global games
-    # Extract data sent by client
     if verbose:
         try:
             ic(session)
         except:
             pass
+    # Extract data sent by client
     data = request.json["payload"]
     if verbose: ic('Received data from client:', data)
     if data["Type"] == "Start": # new? get the setup info
@@ -83,9 +96,13 @@ def handle_request():
         return jsonify({"Type":"Prompt", "Prompt":prompt})
     elif data["Type"] == "Answer": # sending an answer? update the game
         games[session["gameId"]]["Player"]["Answer"] = data["Message"]
-        return jsonify({"Update":"FIXME player answer"})
-    else:
-        return jsonify("Answer")
+        return jsonify({"Received":{"Player":session["Name", "Answer":data["Message"]]}})
+    else: # otherwise just send an update
+        update = {}
+        update["Update"] = jsonify(genUpdate(session["gameId"], sanitized=True))
+        if debug:
+            ic(update)
+        return update
 
 if __name__ == '__main__':
     app.run(debug=True)

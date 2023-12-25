@@ -16,9 +16,18 @@ function pollServer(type, message) {
     .then(data => {
         console.log('Received data:', data);
         // Process the data here
-        if (data.Type == "Prompt") {
-            console.log("Prompt!");
-            document.getElementById("prompt").textContent = data.Prompt;
+        switch (data.Type) {
+            case "Prompt":
+                console.log("Prompt!");
+                document.getElementById("prompt").textContent = data.Prompt;
+                break;
+            case "Received":
+                console.log("Server received answer " + data["Answer"] + " for player " + data["Player"]);
+                // FIXME update player answer
+                break;
+            case "Update":
+                console.log("Received board update like " + data["Update"]);
+                // FIXME update the table
         }
         // Schedule the next poll
         // setTimeout(pollServer, 5000); // Poll every 5 seconds
