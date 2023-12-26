@@ -30,17 +30,21 @@ def genUpdate(gameId, sanitized=True):
     # generate an update to push to players, w/o others' prompts if the round isn't over
     global games
     update = []
-    for player in gameas[gameId]:
+    # ic(games, gameId, sanitized)
+    for i in range(len(games[gameId]["Players"])):
+        ic(games[gameId]["Players"])
+        player = games[gameId]["Players"][i]
         update.append(player)
         if sanitized:
-            update[player]["Prompt"] = "Entered"
+            update[i]["Prompt"] = "Entered"
+    if verbose: ic(update)
     return update
 
 # Each game is a dict entry like:
 # {"Game12":{"Players":[], "Prompt":"Fire ____"}}
 
 # Players are like:
-# {"Bob":{"Points":5, "Answer":"Fart"}}
+# ["Name":"Bob", "Points":5, "Answer":"Fart"}]
 
 app = Flask(__name__)
 app.secret_key = "Setec Astronomy"  # or set a static secret key
@@ -51,6 +55,7 @@ def index():
 
 @app.route('/setup', methods=['GET','POST'])
 def setup():
+    session.clear()
     return render_template('setup.html')
 
 @app.route('/game', methods=['GET','POST'])
@@ -68,10 +73,10 @@ def game():
         name = "Guest"
         gameId = "ThereCanBeOnlyOne"
     global games
-    if gameId in games: # add player to game or
-        games[gameId]["Players"][name] = {"Points":0, "Answer":""}
-    else: # create a new game
-        games[gameId] = {"Players":{name:{"Points":0, "Answer":""}}}
+    if not gameId in games: # create game if it doesn't exist
+        games[gameId] = {"Players":[], "Prompt":""}
+    # add player to game
+    games[gameId]["Players"].append({"Name":name,"Points":0, "Answer":""})
     if debug: ic(games)
     session['Name'] = name
     # session['Points'] = 0
@@ -91,15 +96,19 @@ def handle_request():
     data = request.json["payload"]
     if verbose: ic('Received data from client:', data)
     if data["Type"] == "Start": # new? get the setup info
-        prompt = pickPrompt()
+        if games[session["GameId"]]["Prompt"] == "": # no prompt? gen one
+            prompt = pickPrompt()
+            games[session["GameId"]]["Prompt"] = prompt
+        else: # otherwise send the one that's already been selected
+            prompt = games[session["GameId"]]["Prompt"]
         if verbose: ic(f"Sending prompt {prompt}")
         return jsonify({"Type":"Prompt", "Prompt":prompt})
-    elif data["Type"] == "Answer": # sending an answer? update the game
-        games[session["gameId"]]["Player"]["Answer"] = data["Message"]
+    elif data["Type"] == "Answer": # player is sending an answer? update the game
+        games[session["GameId"]]["Player"]["Answer"] = data["Message"]
         return jsonify({"Received":{"Player":session["Name", "Answer":data["Message"]]}})
     else: # otherwise just send an update
-        update = {}
-        update["Update"] = jsonify(genUpdate(session["gameId"], sanitized=True))
+        update = {"Type":"Update"}
+        update["Update"] = genUpdate(session["GameId"], sanitized=True)
         if debug:
             ic(update)
         return update

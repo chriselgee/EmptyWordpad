@@ -1,4 +1,32 @@
-function pollServer(type, message) {
+function updateTable(data) { // update the table based on incoming poll data
+    console.log("1");
+    // const players = JSON.parse(data);
+    const table = document.getElementById('scoreTable');
+
+    // Clear existing table rows, except the header
+    while(table.rows.length > 1) {
+        table.deleteRow(1);
+    }
+    console.log("2");
+
+    // Iterate through each player and add a row for each
+    data.forEach(player => {
+        const row = table.insertRow(); // Create a new row at the end
+        console.log("3");
+
+        // Create a cell for each data point and append it to the row
+        const nameCell = row.insertCell();
+        const scoreCell = row.insertCell();
+        const promptCell = row.insertCell();
+
+        // Assign the text values for each cell
+        nameCell.textContent = player.Name;
+        scoreCell.textContent = player.Score;
+        promptCell.textContent = player.Prompt;
+    });
+}
+
+function pollServer(type = "Status", message = "Status") {
     const payload = {
         Type: type,
         Message: message
@@ -27,10 +55,9 @@ function pollServer(type, message) {
                 break;
             case "Update":
                 console.log("Received board update like " + data["Update"]);
-                // FIXME update the table
+                updateTable(data["Update"]);
+                break;
         }
-        // Schedule the next poll
-        // setTimeout(pollServer, 5000); // Poll every 5 seconds
     })
     .catch(error => {
         console.error('Error during polling:', error);
@@ -40,7 +67,7 @@ function pollServer(type, message) {
 function startPoll() {
     pollServer("Start","Start");
     // Optionally, schedule a retry here
-    // setTimeout(pollServer, 1000);
+    setTimeout(pollServer, 1000);
 };
 
 function sendAnswer () {
