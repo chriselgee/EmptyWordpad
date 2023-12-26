@@ -104,8 +104,10 @@ def handle_request():
         if verbose: ic(f"Sending prompt {prompt}")
         return jsonify({"Type":"Prompt", "Prompt":prompt})
     elif data["Type"] == "Answer": # player is sending an answer? update the game
-        games[session["GameId"]]["Player"]["Answer"] = data["Message"]
-        return jsonify({"Received":{"Player":session["Name", "Answer":data["Message"]]}})
+        for i in range(len(games[session["GameId"]]["Players"])):
+            if games[session["GameId"]]["Players"][i]["Name"] == session["Name"]:
+                games[session["GameId"]]["Players"][i]["Answer"] = data["Message"]
+        return {"Received":{"Player":session["Name"], "Answer":data["Message"]}}
     else: # otherwise just send an update
         update = {"Type":"Update"}
         update["Update"] = genUpdate(session["GameId"], sanitized=True)
