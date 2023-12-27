@@ -2,7 +2,7 @@ function updateTable(data) { // update the table based on incoming poll data
     const table = document.getElementById('scoreTable');
 
     // Clear existing table rows, except the header
-    while(table.rows.length >= 1) {
+    while(table.rows.length > 1) {
         table.deleteRow(1);
     }
 
@@ -39,15 +39,14 @@ function pollServer(type = "Status", message = "Status") {
         console.log('Received data:', data);
         // Process the data here
         switch (data.Type) {
-            case "Prompt":
+            case "Prompt": // get prompt from server
                 console.log("Prompt!");
                 document.getElementById("prompt").textContent = data.Prompt;
                 break;
-            case "Received":
+            case "Received": // ack answer from player
                 console.log("Server received answer " + data["Answer"] + " for player " + data["Player"]);
-                // FIXME update player answer
                 break;
-            case "Update":
+            case "Update": // update the player table
                 console.log("Received board update like " + data["Update"]);
                 updateTable(data["Update"]);
                 break;
@@ -60,8 +59,11 @@ function pollServer(type = "Status", message = "Status") {
 
 function startPoll() {
     pollServer("Start","Start");
-    // Optionally, schedule a retry here
-    setTimeout(pollServer, 1000);
+
+    // poll for status ever 1000 ms
+    setInterval(() => {
+        pollServer("Status", "Status");
+    }, 1000);
 };
 
 function sendAnswer () {
