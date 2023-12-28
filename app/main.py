@@ -32,12 +32,16 @@ def genUpdate(gameId, sanitized=True):
     update = []
     # ic(games, gameId, sanitized)
     for i in range(len(games[gameId]["Players"])):
-        ic(games[gameId]["Players"])
-        player = games[gameId]["Players"][i]
-        update.append(player)
+        if debug: ic(games[gameId]["Players"])
+        player = games[gameId]["Players"][i].copy()
+        # ic(player["Answer"])
+        update.append(player.copy())
         if sanitized: # blank out answers entered
             update[i]["Answer"] = "Entered"
-        if player["Answer"] == "": # show Pending if there's no answer yet
+        else:
+            update[i]["Answer"] = player["Answer"]
+        # ic(player["Answer"])
+        if len(player["Answer"]) < 1: # show Pending if there's no answer yet
             update[i]["Answer"] = "Pending"
     if verbose: ic(update)
     return update
@@ -45,35 +49,33 @@ def genUpdate(gameId, sanitized=True):
 def calcScore(gameId):
     # calculate scores for the end of a round
     global games
-    if not games[gameId]["Scored"]:
-        return None # don't add points if it's already been done
-    else:
-        games[gameId]["Scored"] = True
-        matches = {} # count up matching answers
-        pointIncreases = {} # track what matches
-        for player in games[gameId]["Players"]: # cycle through players, checking answers
-            if player["Answer"].lower().strip() in matches: # increment if answer's already been seen
-                matches[player["Answer"].lower().strip()] += 1
-            else: # otherwise add it to the collection
-                matches[player["Answer"].lower().strip()] = 1
-        for answer in matches:
-            if matches[answer] == 2: # 3 points for single match
-                for i in range(len(games[gameId]["Players"])):
-                    if games[gameId]["Players"][i]["Answer"].lower() == answer:
-                        games[gameId]["Players"][i]["Points"] += 3
-                        pointIncreases[games[gameId]["Players"][i]["Name"]] = "+3"
-            if matches[answer] > 2: # 1 point for multi match
-                for i in range(len(games[gameId]["Players"])):
-                    if games[gameId]["Players"][i]["Answer"].lower() == answer:
-                        games[gameId]["Players"][i]["Points"] += 1
-                        pointIncreases[games[gameId]["Players"][i]["Name"]] = "+1"
-        if verbose: ic(pointIncreases)
-        return pointIncreases # send back a dict of score increases
+    if verbose: ic(games[gameId]["Phase"])
+    matches = {} # count up matching answers
+    pointIncreases = {} # track what matches
+    for player in games[gameId]["Players"]: # cycle through players, checking answers
+        if player["Answer"].lower().strip() in matches: # increment if answer's already been seen
+            matches[player["Answer"].lower().strip()] += 1
+        else: # otherwise add it to the collection
+            matches[player["Answer"].lower().strip()] = 1
+    for answer in matches:
+        if matches[answer] == 2: # 3 points for single match
+            for i in range(len(games[gameId]["Players"])):
+                if games[gameId]["Players"][i]["Answer"].lower() == answer:
+                    games[gameId]["Players"][i]["Points"] += 3
+                    pointIncreases[games[gameId]["Players"][i]["Name"]] = "+3"
+        if matches[answer] > 2: # 1 point for multi match
+            for i in range(len(games[gameId]["Players"])):
+                if games[gameId]["Players"][i]["Answer"].lower() == answer:
+                    games[gameId]["Players"][i]["Points"] += 1
+                    pointIncreases[games[gameId]["Players"][i]["Name"]] = "+1"
+    if verbose: ic(pointIncreases)
+    return pointIncreases # send back a dict of score increases
 
 def checkIfRoundDone(gameId):
     # checks if everyone has an answer
     roundOver = True
     for i in range(len(games[gameId]["Players"])):
+        if debug: ic(f'Looking at answer {games[gameId]["Players"][i]["Answer"]}')
         if games[gameId]["Players"][i]["Answer"] == "":
             roundOver = False
     if verbose: ic(roundOver)
@@ -85,11 +87,17 @@ def checkIfWinner(gameId):
     for i in range(len(games[gameId]["Players"])):
         if games[gameId]["Players"][i]["Points"] >= 25:
             winners.append(games[gameId]["Players"][i]["Name"])
+            games[gameId]["Phase"] = "End" # mark end of game
     if verbose: ic(winners)
     return winners # returns empty list if no winners
 
 # Each game is a dict entry like:
-# {"Game12":{"Players":[], "Prompt":"Fire ____", "Locked":True, "Available":[], "Scored":False}}
+# {"Game12":{"Players":[], "Prompt":"Fire ____", "Phase":"Join", "Available":[]}}
+# Phases:
+#   - Join: awaiting players
+#   - Prompt: awaiting answers
+#   - Score: all prompts in, showing scores
+#   - End: someone has 25+ points
 
 # Players are like:
 # ["Name":"Bob", "Points":5, "Answer":"Fart"}]
@@ -122,7 +130,8 @@ def game():
         gameId = "ThereCanBeOnlyOne"
     global games
     if not gameId in games: # create game if it doesn't exist
-        games[gameId] = {"Players":[], "Prompt":"", "Locked":False, "Available":getPrompts(), "Scored":False}
+        games[gameId] = {"Players":[], "Prompt":"", "Phase":"Join", "Available":getPrompts()}
+        ic(games[gameId]["Phase"])
     # add player to game
     games[gameId]["Players"].append({"Name":name,"Points":0, "Answer":""})
     if debug: ic(games)
@@ -160,14 +169,18 @@ def handle_request():
         for i in range(len(games[session["GameId"]]["Players"])):
             if games[session["GameId"]]["Players"][i]["Name"] == session["Name"]: # find the right player to update
                 games[session["GameId"]]["Players"][i]["Answer"] = data["Message"] # update
-        games[session["GameId"]]["Locked"] = True # don't allow more players in
+        games[session["GameId"]]["Phase"] = "Prompt" # take game out of Join mode on first answer
+        ic(games[session["GameId"]]["Phase"])
         if verbose: ic({"Received":{"Player":session["Name"], "Answer":data["Message"]}})
         return {"Received":{"Player":session["Name"], "Answer":data["Message"]}}
     else: # otherwise just send an update
         update = {"Type":"Update"}
         if checkIfRoundDone(session["GameId"]):
+            if games[session["GameId"]]["Phase"] == "Prompt": # make sure we haven't calculated score already
+                calcScore(session["GameId"]) # calc round score
+                games[session["GameId"]]["Phase"] = "Score" # put game in score display mode
+                ic(games[session["GameId"]]["Phase"])
             update["Update"] = genUpdate(session["GameId"], sanitized=False)
-            calcScore(session["GameId"])
         else:
             update["Update"] = genUpdate(session["GameId"], sanitized=True)
         if debug: ic(update)
