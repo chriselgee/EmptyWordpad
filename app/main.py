@@ -46,7 +46,7 @@ def calcScore(gameId):
     # calculate scores for the end of a round
     global games
     matches = {} # count up matching answers
-    response = {} # track what matches
+    pointIncreases = {} # track what matches
     for player in games[gameId]["Players"]: # cycle through players, checking answers
         if player["Answer"].lower().strip() in matches: # increment if answer's already been seen
             matches[player["Answer"].lower().strip()] += 1
@@ -56,14 +56,33 @@ def calcScore(gameId):
         if matches[answer] == 2: # 3 points for single match
             for i in range(len(games[gameId]["Players"])):
                 if games[gameId]["Players"][i]["Answer"].lower() == answer:
-                    games[gameId]["Players"][i]["Score"] += 3
-                    response[games[gameId]["Players"][i]["Name"]] = "+3"
+                    games[gameId]["Players"][i]["Points"] += 3
+                    pointIncreases[games[gameId]["Players"][i]["Name"]] = "+3"
         if matches[answer] > 2: # 1 point for multi match
             for i in range(len(games[gameId]["Players"])):
                 if games[gameId]["Players"][i]["Answer"].lower() == answer:
-                    games[gameId]["Players"][i]["Score"] += 1
-                    response[games[gameId]["Players"][i]["Name"]] = "+1"
-    return response # send back a dict of score increases
+                    games[gameId]["Players"][i]["Points"] += 1
+                    pointIncreases[games[gameId]["Players"][i]["Name"]] = "+1"
+    if verbose: ic(pointIncreases)
+    return pointIncreases # send back a dict of score increases
+
+def checkIfRoundDone(gameId):
+    # checks if everyone has an answer
+    roundOver = True
+    for i in range(len(games[gameId]["Players"])):
+        if games[gameId]["Players"][i]["Answer"] == "":
+            roundOver = False
+    if verbose: ic(roundOver)
+    return roundOver
+
+def checkIfWinner(gameId):
+    # check if someone has 25 points
+    winners = []
+    for i in range(len(games[gameId]["Players"])):
+        if games[gameId]["Players"][i]["Points"] >= 25:
+            winners.append(games[gameId]["Players"][i]["Name"])
+    if verbose: ic(winners)
+    return winners # returns empty list if no winners
 
 # Each game is a dict entry like:
 # {"Game12":{"Players":[], "Prompt":"Fire ____", "Locked":True}}
@@ -117,14 +136,14 @@ def fail():
 def handle_request():
     # respond to regular poll requests from clients
     global games
-    if verbose:
+    if debug:
         try:
             ic(session)
         except:
-            pass
+            ic("Couldn't ic(session)")
     # Extract data sent by client
     data = request.json["payload"]
-    if verbose: ic('Received data from client:', data)
+    if debug: ic('Received data from client:', data)
     if data["Type"] == "Start": # new? get the setup info
         if games[session["GameId"]]["Prompt"] == "": # no prompt? gen one
             prompt = pickPrompt()
@@ -138,12 +157,16 @@ def handle_request():
             if games[session["GameId"]]["Players"][i]["Name"] == session["Name"]: # find the right player to update
                 games[session["GameId"]]["Players"][i]["Answer"] = data["Message"] # update
         games[session["GameId"]]["Locked"] = True # don't allow more players in
+        if verbose: ic({"Received":{"Player":session["Name"], "Answer":data["Message"]}})
         return {"Received":{"Player":session["Name"], "Answer":data["Message"]}}
     else: # otherwise just send an update
         update = {"Type":"Update"}
-        update["Update"] = genUpdate(session["GameId"], sanitized=True)
-        if debug:
-            ic(update)
+        if checkIfRoundDone:
+            update["Update"] = genUpdate(session["GameId"], sanitized=False)
+            calcScore(session["GameId"])
+        else:
+            update["Update"] = genUpdate(session["GameId"], sanitized=True)
+        if debug: ic(update)
         return update
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Data Fetch</title>
+    <title>Empty Wordpad!</title>
     <script src="{{ url_for('static', filename='main.js') }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -17,13 +17,16 @@
     <button onclick="sendAnswer()">Send Answer</button>
 
     <table id="scoreTable">
-        <tr><td id="name">Name</td><td id="score">Score</td><td id="answer">Answer</td></tr>
+        <tr>
+            <td id="name"><b>Name</b></td>
+            <td id="score"><b>Score</b></td>
+            <td id="answer"><b>Answer</b></td>
+        </tr>
     </table>
 
     <script>
         // submit the answer when someone hits enter
-        var input = document.getElementById('dataField');
-        input.addEventListener('keypress', function(event) {
+        document.getElementById('dataField').addEventListener('keypress', function(event) {
             // Check if the key pressed is Enter
             if (event.key === "Enter" || event.keyCode === 13) {
                 sendAnswer();
