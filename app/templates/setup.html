@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Data Fetch</title>
+    <title>Empty Wordpad</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-
-    <h1>Enter Your Name</h1>
+    <h1>Empty Wordpad!</h1>
     <form action="/game" method="POST">
+        <h2>Enter Your Name</h2>
         <input type="hidden" id="gameId" name="gameId" value="ThereCanBeOnlyOne">
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" required autofocus="autofocus">
