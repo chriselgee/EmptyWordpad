@@ -166,6 +166,15 @@ def handle_request():
         if verbose: ic(f"Sending prompt {prompt}")
         return jsonify({"Type":"Prompt", "Prompt":prompt})
     elif data["Type"] == "Answer": # player is sending an answer? update the game
+        if games[session["GameId"]]["Phase"] == "Score": # starting a new round?
+            prompt = games[session["GameId"]]["Available"].pop() # get a new prompt
+            games[session["GameId"]]["Phase"] = "Prompt" # go back to prompt mode
+            for player in games[session["GameId"]]["Players"]:
+                player["Answer"] = "" # reset everyone's answers
+            ic(games[session["GameId"]]["Players"])
+            games[session["GameId"]]["Prompt"] = prompt
+            if verbose: ic(f"Sending prompt {prompt}")
+            return jsonify({"Type":"Prompt", "Prompt":prompt})
         for i in range(len(games[session["GameId"]]["Players"])):
             if games[session["GameId"]]["Players"][i]["Name"] == session["Name"]: # find the right player to update
                 games[session["GameId"]]["Players"][i]["Answer"] = data["Message"] # update
@@ -183,6 +192,7 @@ def handle_request():
             update["Update"] = genUpdate(session["GameId"], sanitized=False)
         else:
             update["Update"] = genUpdate(session["GameId"], sanitized=True)
+        update["Prompt"] = games[session["GameId"]]["Prompt"]
         if debug: ic(update)
         return update
 

@@ -56,6 +56,7 @@ function pollServer(type = "Status", message = "Status", prompt = "") {
             case "Update": // update the player table
                 console.log("Received board update like " + data["Update"]);
                 updateTable(data["Update"]);
+                document.getElementById("prompt").textContent = data.Prompt; // update prompt if new
                 break;
         }
         // good so far?  clear failure count
