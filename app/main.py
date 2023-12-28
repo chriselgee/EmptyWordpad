@@ -35,13 +35,38 @@ def genUpdate(gameId, sanitized=True):
         ic(games[gameId]["Players"])
         player = games[gameId]["Players"][i]
         update.append(player)
-        if sanitized:
+        if sanitized: # blank out answers entered
             update[i]["Prompt"] = "Entered"
+        if player["Answer"] == "": # show Pending if there's no answer yet
+            update[i]["Prompt"] = "Pending"
     if verbose: ic(update)
     return update
 
+def calcScore(gameId):
+    # calculate scores for the end of a round
+    global games
+    matches = {} # count up matching answers
+    response = {} # track what matches
+    for player in games[gameId]["Players"]: # cycle through players, checking answers
+        if player["Answer"].lower().strip() in matches: # increment if answer's already been seen
+            matches[player["Answer"].lower().strip()] += 1
+        else: # otherwise add it to the collection
+            matches[player["Answer"].lower().strip()] = 1
+    for answer in matches:
+        if matches[answer] == 2: # 3 points for single match
+            for i in range(len(games[gameId]["Players"])):
+                if games[gameId]["Players"][i]["Answer"].lower() == answer:
+                    games[gameId]["Players"][i]["Score"] += 3
+                    response[games[gameId]["Players"][i]["Name"]] = "+3"
+        if matches[answer] > 2: # 1 point for multi match
+            for i in range(len(games[gameId]["Players"])):
+                if games[gameId]["Players"][i]["Answer"].lower() == answer:
+                    games[gameId]["Players"][i]["Score"] += 1
+                    response[games[gameId]["Players"][i]["Name"]] = "+1"
+    return response # send back a dict of score increases
+
 # Each game is a dict entry like:
-# {"Game12":{"Players":[], "Prompt":"Fire ____"}}
+# {"Game12":{"Players":[], "Prompt":"Fire ____", "Locked":True}}
 
 # Players are like:
 # ["Name":"Bob", "Points":5, "Answer":"Fart"}]
@@ -74,7 +99,7 @@ def game():
         gameId = "ThereCanBeOnlyOne"
     global games
     if not gameId in games: # create game if it doesn't exist
-        games[gameId] = {"Players":[], "Prompt":""}
+        games[gameId] = {"Players":[], "Prompt":"", "Locked":False}
     # add player to game
     games[gameId]["Players"].append({"Name":name,"Points":0, "Answer":""})
     if debug: ic(games)
@@ -82,6 +107,11 @@ def game():
     # session['Points'] = 0
     session['GameId'] = gameId
     return render_template('game.html', name=session["Name"], gameId=session["GameId"])
+
+@app.route('/fail', methods=['GET','POST'])
+def fail():
+    session.clear()
+    return render_template('fail.html', message="Sadness")
 
 @app.route('/poll', methods=['POST'])
 def handle_request():
@@ -105,8 +135,9 @@ def handle_request():
         return jsonify({"Type":"Prompt", "Prompt":prompt})
     elif data["Type"] == "Answer": # player is sending an answer? update the game
         for i in range(len(games[session["GameId"]]["Players"])):
-            if games[session["GameId"]]["Players"][i]["Name"] == session["Name"]:
-                games[session["GameId"]]["Players"][i]["Answer"] = data["Message"]
+            if games[session["GameId"]]["Players"][i]["Name"] == session["Name"]: # find the right player to update
+                games[session["GameId"]]["Players"][i]["Answer"] = data["Message"] # update
+        games[session["GameId"]]["Locked"] = True # don't allow more players in
         return {"Received":{"Player":session["Name"], "Answer":data["Message"]}}
     else: # otherwise just send an update
         update = {"Type":"Update"}
