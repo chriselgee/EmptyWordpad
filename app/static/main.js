@@ -25,10 +25,11 @@ function updateTable(data) { // update the table based on incoming poll data
     });
 }
 
-function pollServer(type = "Status", message = "Status") {
+function pollServer(type = "Status", message = "Status", prompt = "") {
     const payload = {
         Type: type,
-        Message: message
+        Message: message,
+        Prompt: prompt
     };
     fetch('poll', {
         method: 'POST',
