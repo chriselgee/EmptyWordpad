@@ -1,3 +1,8 @@
+// track poll failures
+var intervalId; 
+var failureCount = 0;
+var maxFailures = 5;
+
 function updateTable(data) { // update the table based on incoming poll data
     const table = document.getElementById('scoreTable');
 
@@ -51,25 +56,32 @@ function pollServer(type = "Status", message = "Status") {
                 updateTable(data["Update"]);
                 break;
         }
+        // good so far?  clear failure count
+        failureCount = 0;
     })
     .catch(error => {
         console.error('Error during polling:', error);
+        failureCount++;
+        if (failureCount >= maxFailures) {
+            console.error("Max failures reached. Stopping polling.");
+            clearInterval(intervalId);
+        }
     });
 }
 
 function startPoll() {
     pollServer("Start","Start");
 
-    // poll for status ever 1000 ms
-    setInterval(() => {
+    // poll for status every 1000 ms
+    intervalId = setInterval(() => {
         pollServer("Status", "Status");
     }, 1000);
 };
 
 function sendAnswer () {
-    let playerResponse = document.getElementById("dataField").value;
-    console.log("Sending answer " + playerResponse);
-    pollServer("Answer",playerResponse);
+    console.log("Sending answer " + document.getElementById("dataField").value);
+    pollServer("Answer",document.getElementById("dataField").value);
+    document.getElementById("dataField").value = "";
 }
 
 window.onload = startPoll();

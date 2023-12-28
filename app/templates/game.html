@@ -12,7 +12,7 @@
 
     <h1>{{ name }}</h1>
     <p id="prompt">Prompt appears here</p>
-    <input id="gameId" style="display: none;" value="{{ gameId }}"></textarea>
+    <input id="gameId" style="display: none;" value="{{ gameId }}"></input>
     <input id="dataField" autofocus="autofocus"></input>
     <button onclick="sendAnswer()">Send Answer</button>
 
@@ -20,5 +20,15 @@
         <tr><td id="name">Name</td><td id="score">Score</td><td id="answer">Answer</td></tr>
     </table>
 
+    <script>
+        // submit the answer when someone hits enter
+        var input = document.getElementById('dataField');
+        input.addEventListener('keypress', function(event) {
+            // Check if the key pressed is Enter
+            if (event.key === "Enter" || event.keyCode === 13) {
+                sendAnswer();
+            }
+        });
+    </script>
 </body>
 </html>
