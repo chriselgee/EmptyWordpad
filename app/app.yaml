@@ -1,0 +1,3 @@
+service: empty-wordpad
+runtime: python310
+env: standard
